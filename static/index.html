@@ -1,0 +1,105 @@
+<html>
+	<body>
+		<div>
+			<input id="input" type="text" />
+			<button onclick="onAddTodo()">Add</button>
+			<span>Todos</span>
+			<ul id="todo-list"></ul>
+			<button onclick="refreshTodos()">reload</button>
+			<button onclick="onDeleteAll()">Delete all X</button>
+		</div>
+		<script>
+			window.onload = () => refreshTodos();
+			let todos = [];
+
+			function displayTodos(todos) {
+				let todoListEl = document.getElementById("todo-list");
+				todoListEl.innerHTML = "";
+				let todoElements = todos.map((todo) => {
+					let li = document.createElement("li");
+					let span = document.createElement("span");
+					span.innerText = todo.name;
+					let checkbox = document.createElement("input");
+					checkbox.type = "checkbox";
+					checkbox.checked = todo.isFinished;
+					checkbox.onclick = () =>
+						onCheckboxChecked(todo.id, checkbox.checked);
+					li.append(...[span, checkbox]);
+					return li;
+				});
+				todoListEl.append(...todoElements);
+			}
+
+			function onCheckboxChecked(todoId, newValue) {
+				updateTodo(todoId, newValue).then(() => refreshTodos());
+			}
+
+			function onAddTodo() {
+				let inputText = document.getElementById("input").value;
+				document.getElementById("input").value = "";
+				addTodo(inputText).then(refreshTodos());
+			}
+
+			function onDeleteAll() {
+				deleteAllTodos().then(refreshTodos());
+			}
+
+			async function refreshTodos() {
+				fetch("http://localhost:8080/todos")
+					.then((res) => res.json())
+					.then((data) => {
+						todos = data;
+						displayTodos(data);
+					})
+					.catch((err) => {
+						console.error(err);
+					});
+			}
+
+			async function addTodo(text) {
+				todoToAdd = {
+					name: text,
+				};
+				await fetch(`http://localhost:8080/todos/add`, {
+					method: "POST",
+					body: JSON.stringify(todoToAdd),
+					headers: {
+						"Content-Type": "application/json",
+					},
+				})
+					.then((res) => res.json())
+					.then((data) => {
+						todos.push(data);
+						displayTodos(todos)
+					});
+			}
+
+			async function updateTodo(todoId, newValue) {
+				console.log("hellos");
+				todoToUpdate = todos.find((todo) => todo.id == todoId);
+				await fetch(`http://localhost:8080/todos/${todoId}`, {
+					method: "PATCH",
+					body: JSON.stringify({
+						name: todoToUpdate.name,
+						isFinished: newValue,
+					}),
+					headers: {
+						"Content-Type": "application/json",
+					},
+				});
+			}
+
+			async function deleteTodo(todoId) {
+				await fetch(`http://localhost:8080/todos/${todoId}`, {
+					method: "DELETE",
+				});
+			}
+
+			async function deleteAllTodos() {
+				await fetch(`http://localhost:8080/todos`, {
+					method: "DELETE",
+				});
+			}
+		</script>
+	</body>
+</html>
