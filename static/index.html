@@ -9,22 +9,49 @@
 			<button onclick="onDeleteAll()">Delete all X</button>
 		</div>
 		<script>
-			window.onload = () => refreshTodos();
 			let todos = [];
+
+			window.onload = () => refreshTodos();
 
 			function displayTodos(todos) {
 				let todoListEl = document.getElementById("todo-list");
 				todoListEl.innerHTML = "";
 				let todoElements = todos.map((todo) => {
 					let li = document.createElement("li");
-					let span = document.createElement("span");
-					span.innerText = todo.name;
+					let todoNameLabel = document.createElement("span");
+					todoNameLabel.innerText = todo.name;
+					todoNameLabel.addEventListener("dblclick", (event) => {
+						console.log("double click");
+						todoNameLabel.disabled = false;
+					});
+
+					let todoNameInput = document.createElement("input");
+					todoNameInput.type = "text";
+					todoNameInput.disabled = true;
+					todoListEl.addEventListener("keyup", ({ key, target }) => {
+						if (key === "Enter") {
+							console.log(todoNameInput.value);
+						}
+					});
+
 					let checkbox = document.createElement("input");
 					checkbox.type = "checkbox";
 					checkbox.checked = todo.isFinished;
 					checkbox.onclick = () =>
 						onCheckboxChecked(todo.id, checkbox.checked);
-					li.append(...[span, checkbox]);
+					let deleteButton = document.createElement("button");
+					deleteButton.onclick = () => {
+						onDeleteTodo(todo.id);
+					};
+					deleteButton.innerText = "X";
+					li.append(
+						...[
+							todoNameLabel,
+							todoNameInput,
+							checkbox,
+							deleteButton,
+						]
+					);
 					return li;
 				});
 				todoListEl.append(...todoElements);
@@ -37,14 +64,22 @@
 			function onAddTodo() {
 				let inputText = document.getElementById("input").value;
 				document.getElementById("input").value = "";
-				addTodo(inputText).then(refreshTodos());
+				addTodo(inputText).then(() => refreshTodos());
+			}
+
+			function onChangeName(todoId, newName) {
+				//TODO
+			}
+
+			function onDeleteTodo(todoId) {
+				deleteTodo(todoId).then(() => refreshTodos());
 			}
 
 			function onDeleteAll() {
-				deleteAllTodos().then(refreshTodos());
+				deleteAllTodos().then(() => refreshTodos());
 			}
 
-			async function refreshTodos() {
+			function refreshTodos() {
 				fetch("http://localhost:8080/todos")
 					.then((res) => res.json())
 					.then((data) => {
@@ -56,6 +91,8 @@
 					});
 			}
 
+			function onTodoLabelClicked(label) {}
+
 			async function addTodo(text) {
 				todoToAdd = {
 					name: text,
@@ -66,12 +103,7 @@
 					headers: {
 						"Content-Type": "application/json",
 					},
-				})
-					.then((res) => res.json())
-					.then((data) => {
-						todos.push(data);
-						displayTodos(todos)
-					});
+				});
 			}
 
 			async function updateTodo(todoId, newValue) {
