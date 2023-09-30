@@ -1,137 +1,207 @@
 <html>
 	<body>
-		<div>
-			<input id="input" type="text" />
-			<button onclick="onAddTodo()">Add</button>
+		<div id="container">
+			<label>New Todo</label>
+			<div id="addTodoContainer">
+				<input id="titleInput" type="text" placeholder="Title" />
+				<button onclick="onAddTodo()">Add</button>
+			</div>
 			<span>Todos</span>
 			<ul id="todo-list"></ul>
-			<button onclick="refreshTodos()">reload</button>
-			<button onclick="onDeleteAll()">Delete all X</button>
+			<button id="deleteAllButton" onclick="onDeleteAll()">
+				Delete all
+			</button>
 		</div>
-		<script>
-			let todos = [];
-
-			window.onload = () => refreshTodos();
-
-			function displayTodos(todos) {
-				let todoListEl = document.getElementById("todo-list");
-				todoListEl.innerHTML = "";
-				let todoElements = todos.map((todo) => {
-					let li = document.createElement("li");
-					let todoNameLabel = document.createElement("span");
-					todoNameLabel.innerText = todo.name;
-					todoNameLabel.addEventListener("dblclick", (event) => {
-						console.log("double click");
-						todoNameLabel.disabled = false;
-					});
-
-					let todoNameInput = document.createElement("input");
-					todoNameInput.type = "text";
-					todoNameInput.disabled = true;
-					todoListEl.addEventListener("keyup", ({ key, target }) => {
-						if (key === "Enter") {
-							console.log(todoNameInput.value);
-						}
-					});
-
-					let checkbox = document.createElement("input");
-					checkbox.type = "checkbox";
-					checkbox.checked = todo.isFinished;
-					checkbox.onclick = () =>
-						onCheckboxChecked(todo.id, checkbox.checked);
-					let deleteButton = document.createElement("button");
-					deleteButton.onclick = () => {
-						onDeleteTodo(todo.id);
-					};
-					deleteButton.innerText = "X";
-					li.append(
-						...[
-							todoNameLabel,
-							todoNameInput,
-							checkbox,
-							deleteButton,
-						]
-					);
-					return li;
-				});
-				todoListEl.append(...todoElements);
-			}
-
-			function onCheckboxChecked(todoId, newValue) {
-				updateTodo(todoId, newValue).then(() => refreshTodos());
-			}
-
-			function onAddTodo() {
-				let inputText = document.getElementById("input").value;
-				document.getElementById("input").value = "";
-				addTodo(inputText).then(() => refreshTodos());
-			}
-
-			function onChangeName(todoId, newName) {
-				//TODO
-			}
-
-			function onDeleteTodo(todoId) {
-				deleteTodo(todoId).then(() => refreshTodos());
-			}
-
-			function onDeleteAll() {
-				deleteAllTodos().then(() => refreshTodos());
-			}
-
-			function refreshTodos() {
-				fetch("http://localhost:8080/todos")
-					.then((res) => res.json())
-					.then((data) => {
-						todos = data;
-						displayTodos(data);
-					})
-					.catch((err) => {
-						console.error(err);
-					});
-			}
-
-			function onTodoLabelClicked(label) {}
-
-			async function addTodo(text) {
-				todoToAdd = {
-					name: text,
-				};
-				await fetch(`http://localhost:8080/todos/add`, {
-					method: "POST",
-					body: JSON.stringify(todoToAdd),
-					headers: {
-						"Content-Type": "application/json",
-					},
-				});
-			}
-
-			async function updateTodo(todoId, newValue) {
-				console.log("hellos");
-				todoToUpdate = todos.find((todo) => todo.id == todoId);
-				await fetch(`http://localhost:8080/todos/${todoId}`, {
-					method: "PATCH",
-					body: JSON.stringify({
-						name: todoToUpdate.name,
-						isFinished: newValue,
-					}),
-					headers: {
-						"Content-Type": "application/json",
-					},
-				});
-			}
-
-			async function deleteTodo(todoId) {
-				await fetch(`http://localhost:8080/todos/${todoId}`, {
-					method: "DELETE",
-				});
-			}
-
-			async function deleteAllTodos() {
-				await fetch(`http://localhost:8080/todos`, {
-					method: "DELETE",
-				});
-			}
-		</script>
 	</body>
+	<script>
+		let todos = [];
+
+		window.onload = () => refreshTodos();
+
+		function displayTodos(todos) {
+			let todoListEl = document.getElementById("todo-list");
+			todoListEl.innerHTML = "";
+			let todoElements = todos.map((todo) => {
+				let li = document.createElement("li");
+				let todoNameLabel = document.createElement("span");
+				todoNameLabel.innerText = todo.name;
+				todoNameLabel.addEventListener("dblclick", (event) => {
+					console.log("double click");
+					todoNameInput.hidden = false;
+					todoNameInput.value = todoNameLabel.innerText;
+					todoNameInput.focus();
+					todoNameLabel.hidden = true;
+				});
+
+				let todoNameInput = document.createElement("input");
+				todoNameInput.type = "text";
+				todoNameInput.hidden = true;
+				todoListEl.addEventListener("keyup", ({ key, target }) => {
+					if (key === "Enter" && todoNameInput.hidden == false) {
+						todoNameInput.hidden = true;
+						todoNameLabel.hidden = false;
+						onChangeName(todo.id, todoNameInput.value);
+					}
+				});
+
+				let checkbox = document.createElement("input");
+				checkbox.type = "checkbox";
+				checkbox.checked = todo.isFinished;
+				checkbox.onclick = () =>
+					onCheckboxChecked(todo.id, checkbox.checked);
+				let deleteButton = document.createElement("button");
+				deleteButton.onclick = () => {
+					onDeleteTodo(todo.id);
+				};
+				deleteButton.innerText = "X";
+				li.append(
+					...[todoNameLabel, todoNameInput, checkbox, deleteButton]
+				);
+				return li;
+			});
+			todoListEl.append(...todoElements);
+		}
+
+		function onCheckboxChecked(todoId, newValue) {
+			todoToUpdate = todos.find((todo) => todo.id == todoId);
+			updateTodo(todoId, {
+				name: todoToUpdate.name,
+				isFinished: newValue,
+			}).then(() => refreshTodos());
+		}
+
+		function onAddTodo() {
+			let inputText = document.getElementById("titleInput").value;
+			document.getElementById("titleInput").value = "";
+			addTodo(inputText).then(() => refreshTodos());
+		}
+
+		function onChangeName(todoId, newName) {
+			todoToUpdate = todos.find((todo) => todo.id == todoId);
+			updateTodo(todoId, {
+				name: newName,
+				isFinished: todoToUpdate.isFinished,
+				isFinished: todoToUpdate.isFinished,
+			}).then(() => refreshTodos());
+		}
+
+		function onDeleteTodo(todoId) {
+			deleteTodo(todoId).then(() => refreshTodos());
+		}
+
+		function onDeleteAll() {
+			deleteAllTodos().then(() => refreshTodos());
+		}
+
+		function refreshTodos() {
+			fetch("http://localhost:8080/todos")
+				.then((res) => res.json())
+				.then((data) => {
+					todos = data;
+					displayTodos(data);
+					document.getElementById("deleteAllButton").hidden =
+						todos.length == 0;
+				})
+				.catch((err) => {
+					console.error(err);
+				});
+		}
+
+		async function addTodo(text) {
+			todoToAdd = {
+				name: text,
+			};
+			await fetch(`http://localhost:8080/todos/add`, {
+				method: "POST",
+				body: JSON.stringify(todoToAdd),
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+		}
+
+		async function updateTodo(todoId, newTodo) {
+			await fetch(`http://localhost:8080/todos/${todoId}`, {
+				method: "PATCH",
+				body: JSON.stringify({
+					name: newTodo.name,
+					isFinished: newTodo.isFinished,
+				}),
+				headers: {
+					"Content-Type": "application/json",
+				},
+			});
+		}
+
+		async function deleteTodo(todoId) {
+			await fetch(`http://localhost:8080/todos/${todoId}`, {
+				method: "DELETE",
+			});
+		}
+
+		async function deleteAllTodos() {
+			await fetch(`http://localhost:8080/todos`, {
+				method: "DELETE",
+			});
+		}
+	</script>
+	<style>
+		:root {
+			--dark: #051923;
+			--mid-dark: #003554;
+			--mid: #006494;
+			--light: #00a6fb;
+			--white: #ffffff;
+		}
+		body {
+			background-color: var(--mid);
+		}
+		#container {
+			background-color: var(--mid-dark);
+			border-radius: 10px;
+			width: 50vw;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 0 25vw;
+			margin-top: 10vh;
+			box-sizing: border-box;
+			padding: 40px 50px;
+			color: var(--white);
+		}
+
+		#container > label {
+			text-align: center;
+		}
+
+		#addTodoContainer {
+			margin-bottom: 20px;
+			margin-top: 10px;
+		}
+
+		#titleInput {
+			width: 100px;
+		}
+		ul {
+			width: 75%;
+			padding: 0;
+		}
+		li {
+			list-style: none;
+			padding: 0;
+			display: flex;
+			justify-content: space-evenly;
+			margin-bottom: 5px;
+		}
+		li span {
+			padding: 5px;
+			box-sizing: border-box;
+			min-width: 200px;
+			background-color: var(--dark);
+			border-radius: 5px;
+		}
+		li input {
+			max-width: 50px;
+		}
+	</style>
 </html>
