@@ -4,7 +4,7 @@ Simple todo app made using go for the backend and vanilla js for the frontend
 ## How to run
 Set up the postgresql database server. The database connection secrets are hard coded in `db.go` as this is just an offline demo project, not meant for hosting on a public server. 
 
-Clone the repository and run `go run cmd/todo_app/api_server.go` in project root
+Clone the repository and run `go run cmd/todo_app/api_server.go` in the project directory 
 
 The app should be accessible via web browser on `localhost:8080`
 

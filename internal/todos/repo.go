@@ -78,7 +78,7 @@ func (r TodoRepo) GetTodoById(query_id uint) (*Todo, error) {
 }
 
 func (r TodoRepo) EditTodo(queryId uint, request EditTodoRequest) (*Todo, error) {
-	fmt.Printf("id: %d \n", queryId)
+	// fmt.Printf("id: %d \n", queryId)
 	query := fmt.Sprintf(`UPDATE todos SET name = '%s', is_finished = %t WHERE id = %d RETURNING id, name, is_finished`, request.Name, request.IsFinished, queryId)
 	row := r.db.QueryRow(query)
 	var (
